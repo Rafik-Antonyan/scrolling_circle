@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-black text-white;
+  scroll-behavior: smooth;
+  overflow-y: hidden;
+}
+
+@layer base {
+  @font-face {
+    font-family: "Jeko Regular";
+    src: url(/fonts/Jeko_Regular.ttf) format("truetype");
+  }
+
+  @font-face {
+    font-family: "Jeko Bold";
+    src: url(/fonts/Jeko_Bold.ttf) format("truetype");
+  }
+}
