@@ -2,26 +2,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Marquee from "react-fast-marquee";
 
 gsap.registerPlugin(ScrollToPlugin);
-
-interface SectionIndex {
-  current: number;
-  next: number;
-}
 
 export default function Home() {
   const main = useRef<HTMLDivElement | null>(null);
   const bigCircleRef = useRef<HTMLImageElement | null>(null); // Ref for big-circle
   const cubicsRef = useRef<HTMLVideoElement | null>(null); // Ref for cubics
-  const [sections, setSections] = useState([0]); // Keep track of visible sections
-  const [sectionIndex, setSectionIndex] = useState<SectionIndex>({
-    current: 0,
-    next: 0,
-  });
-
+  const [sectionIndex, setSectionIndex] = useState<number>(0);
   const [currIndex, setCurrIndex] = useState<number>(0);
 
   const springTransition = {
@@ -30,17 +20,8 @@ export default function Home() {
     damping: 20,
   };
 
-  const setSection = (newIndex: number) => {
-    setSectionIndex((prev) => ({
-      next: newIndex,
-      current: prev.next,
-    }));
-    
-  };
-
   useEffect(() => {
     if (!main.current) return;
-
     let isScrolling = false;
 
     const handleScroll = (event: WheelEvent) => {
@@ -49,26 +30,18 @@ export default function Home() {
       if (isScrolling) return;
 
       const direction = event.deltaY > 0 ? 1 : -1;
-      let newIndex = sectionIndex.current + direction;
+      let newIndex = sectionIndex + direction;
 
       // Ensure new index is within range
       if (newIndex >= 0 && newIndex < 10) {
         isScrolling = true;
+        setCurrIndex(newIndex);
 
-        // Add or remove sections based on direction
-        if (direction === 1) {
-          setSections((prevSections) => [...prevSections, newIndex]);
-        } else {
-          setSections((prevSections) => [newIndex, ...prevSections]);
-        }
-
-        setCurrIndex(newIndex)
-        
         // Animate both circle and cubics based on direction and section
         if (newIndex < 8) {
-          animateBigCircle(newIndex, direction); // Circle for sections 2-7
+          animateBigCircle(newIndex); // Circle for sections 2-7
         } else if (newIndex >= 8) {
-          animateCubics(newIndex, direction); // Cubics for sections 8-10
+          animateCubics(newIndex); // Cubics for sections 8-10
         }
 
         // Animate section transition
@@ -78,21 +51,18 @@ export default function Home() {
 
     // Function to animate sections
     const animateSectionTransition = (newIndex: number, direction: number) => {
-      if (sectionIndex.current === 0 && newIndex === 1) {
-        setSection(1);
+      if (sectionIndex === 0 && newIndex === 1) {
+        setSectionIndex(1);
       }
       if (newIndex === 8) {
-        setSection(8);
+        setSectionIndex(8);
       }
-      gsap.to(main, 0, {
+      gsap.to(main, {
         opacity: 0,
         y: direction === 1 ? "-100%" : "100%", // Slide up or down
-        duration: 1,
+        duration: 0,
         onComplete: () => {
-          setSections((prevSections) =>
-            prevSections.filter((sec) => sec !== sectionIndex.current)
-          );
-          setSection(newIndex); // Update section index
+          setSectionIndex(newIndex); // Update section index
           isScrolling = false; // Allow scrolling again after animation
         },
       });
@@ -107,7 +77,7 @@ export default function Home() {
       const size = newIndex < 2 ? 405 : 960;
 
       // Animate the big circle with appropriate position, size, and blur
-      gsap.to(bigCircleRef.current, 1, {
+      gsap.to(bigCircleRef.current, {
         left: newIndex === 1 ? 0 : horizontalPosition,
         top: topPosition,
         width: size,
@@ -120,11 +90,11 @@ export default function Home() {
 
     // Updated animateCubics function
     const animateCubics = (newIndex: number) => {
-      const horizontalPosition = newIndex === 8 ? "0vw" : "43vw";
+      const horizontalPosition = newIndex === 8 ? "5vw" : "43vw";
       const size = newIndex === 8 ? 330 : 220;
       const topPosition = newIndex === 8 ? "10vh" : "5vh";
 
-      gsap.to(cubicsRef.current, newIndex === 8 ? 0 : 1, {
+      gsap.to(cubicsRef.current, {
         right: horizontalPosition,
         width: size,
         height: size,
@@ -132,7 +102,7 @@ export default function Home() {
         duration: 1,
         scale: newIndex === 8 ? 1 : 0.7,
         ease: "power2.inOut",
-        opacity: newIndex >= 8 ? 1 : 0,
+        opacity: 1,
       });
     };
 
@@ -151,12 +121,12 @@ export default function Home() {
       style={{ overflowX: "hidden", overflowY: "hidden" }}
     >
       {/* big circle */}
-      {sectionIndex.current > 0 && sectionIndex.current < 8 && (
+      {currIndex > 0 && currIndex < 8 && (
         <motion.img
           ref={bigCircleRef}
           id="big-circle"
           className={`absolute  ${
-            sectionIndex.current < 2
+            currIndex < 2
               ? "w-[405px] h-[405px] top-[70vh] opacity-0"
               : "w-[960px] h-[960px] left-[-35vw] blur-[30px]"
           }`}
@@ -164,32 +134,24 @@ export default function Home() {
           alt="big circle"
           initial={{ opacity: 0 }} // Ensure rotate starts from 0
           whileInView={{
-            opacity: sectionIndex.current > 2 ? 0.5 : 1,
+            opacity: currIndex > 2 ? 0.5 : 1,
             rotate: 180,
           }} // Rotate to -45deg when shows up
           transition={springTransition}
         />
       )}
       {/* cubics */}
-      {sectionIndex.current >= 8 && (
+      {currIndex >= 8 && (
         <motion.video
-          className={`absolute  ${
-            sectionIndex.current == 8
-              ? "w-[330px] h-[330px] top-[10vh] right-[5vw]"
-              : "w-[220px] h-[220px] top-[10vh] right-[43vw]"
-          }`}
+          className='absolute w-[330px] h-[330px] top-[10vh] right-[5vw]'
           loop
           muted
           autoPlay
           src="videos/cubics.mp4"
           ref={cubicsRef}
-          initial={{ opacity: 0 }} // Ensure opacity starts from 0
+          initial={{ opacity: 1 }} // Ensure opacity starts from 0
           whileInView={{
-            opacity:
-              (sections.includes(7) || sections.includes(6)) &&
-              sectionIndex.current === 8
-                ? 0
-                : 1,
+            opacity: 1,
           }} // Opacity is to 1 when shows up
           transition={springTransition}
         />
@@ -453,7 +415,7 @@ export default function Home() {
       </AnimatePresence>
       {/* 6th section */}
       <AnimatePresence mode="popLayout">
-        {currIndex === 5  && (
+        {currIndex === 5 && (
           <motion.div
             id="section6"
             className="section flex h-[100vh] px-[45px] z-10"
@@ -514,6 +476,7 @@ export default function Home() {
             initial={{ x: "100%" }}
             whileInView={{ x: 0 }}
             transition={springTransition}
+            exit={{x: '-10vw'}}
           >
             <div>
               <motion.div
